@@ -116,7 +116,7 @@ GROUP BY member_casual, rideable_type;
 ![Hourly Patterns](images/hourly_patterns.png "Hourly ride comparison: Members vs Casuals")
 
 ### Weekday Distribution
-![Weekday Chart](images/daily_patterns.png)
+![Weekday Chart](images/daily_pattern.png)
 
 ### Monthly Seasonality
 ![Monthly Trends](images/monthly_trend.png)
