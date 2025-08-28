@@ -1,0 +1,106 @@
+CREATE OR REPLACE VIEW
+  `case-study-cyclistic-470310.cyclistic_dataset.trips_all` AS
+SELECT * FROM `case-study-cyclistic-470310.cyclistic_dataset.202408`
+UNION ALL SELECT * FROM `case-study-cyclistic-470310.cyclistic_dataset.202409`
+UNION ALL SELECT * FROM `case-study-cyclistic-470310.cyclistic_dataset.202410`
+UNION ALL SELECT * FROM `case-study-cyclistic-470310.cyclistic_dataset.202411`
+UNION ALL SELECT * FROM `case-study-cyclistic-470310.cyclistic_dataset.202412`
+UNION ALL SELECT * FROM `case-study-cyclistic-470310.cyclistic_dataset.202501`
+UNION ALL SELECT * FROM `case-study-cyclistic-470310.cyclistic_dataset.202502`
+UNION ALL SELECT * FROM `case-study-cyclistic-470310.cyclistic_dataset.202503`
+UNION ALL SELECT * FROM `case-study-cyclistic-470310.cyclistic_dataset.202504`
+UNION ALL SELECT * FROM `case-study-cyclistic-470310.cyclistic_dataset.202505`
+UNION ALL SELECT * FROM `case-study-cyclistic-470310.cyclistic_dataset.202506`
+UNION ALL SELECT * FROM `case-study-cyclistic-470310.cyclistic_dataset.202507`;
+
+
+
+CREATE OR REPLACE TABLE
+  `case-study-cyclistic-470310.cyclistic_dataset.trips_clean`
+PARTITION BY DATE(started_at)
+CLUSTER BY member_casual, day_of_week, hour AS
+SELECT
+  ride_id,
+  rideable_type,
+  started_at,                 
+  ended_at,                   
+  LOWER(member_casual) AS member_casual,
+  TIMESTAMP_DIFF(ended_at, started_at, MINUTE) AS ride_length_min,
+  EXTRACT(DAYOFWEEK FROM started_at) AS day_of_week,      
+  DATE(started_at) AS date,
+  FORMAT_DATE('%Y-%m', DATE(started_at)) AS month,
+  EXTRACT(HOUR FROM started_at) AS hour,
+  IF(EXTRACT(DAYOFWEEK FROM started_at) IN (1,7),'weekend','weekday') AS is_weekend,
+  FORMAT_TIMESTAMP('%a', started_at) AS day_name
+FROM `case-study-cyclistic-470310.cyclistic_dataset.trips_all`
+WHERE started_at IS NOT NULL
+  AND ended_at   IS NOT NULL
+  AND LOWER(member_casual) IN ('member','casual')
+  AND TIMESTAMP_DIFF(ended_at, started_at, MINUTE) > 0
+  AND TIMESTAMP_DIFF(ended_at, started_at, MINUTE) <= 1440;
+
+
+
+SELECT
+  member_casual,
+  AVG(ride_length_min) AS avg_minutes,
+  APPROX_QUANTILES(ride_length_min, 100)[OFFSET(50)] AS median_minutes,
+  COUNT(*) AS total_rides
+FROM `case-study-cyclistic-470310.cyclistic_dataset.trips_clean`
+GROUP BY member_casual;
+
+
+SELECT 
+  hour,
+  member_casual,
+  COUNT(*) AS rides
+FROM `case-study-cyclistic-470310.cyclistic_dataset.trips_clean`
+GROUP BY hour, member_casual
+ORDER BY hour, member_casual;
+
+
+SELECT hour, member_casual,day_of_week, COUNT(*) AS rides
+FROM `case-study-cyclistic-470310.cyclistic_dataset.trips_clean`
+GROUP BY hour, member_casual, day_of_week
+ORDER BY hour, member_casual;
+
+
+SELECT 
+  day_name,
+  member_casual,
+  COUNT(*) AS rides
+FROM `case-study-cyclistic-470310.cyclistic_dataset.trips_clean`
+GROUP BY day_name, member_casual
+ORDER BY 
+  CASE day_name
+    WHEN 'Sun' THEN 1
+    WHEN 'Mon' THEN 2
+    WHEN 'Tue' THEN 3
+    WHEN 'Wed' THEN 4
+    WHEN 'Thu' THEN 5
+    WHEN 'Fri' THEN 6
+    WHEN 'Sat' THEN 7
+  END,
+  member_casual;
+
+
+
+SELECT 
+  month,
+  member_casual,
+  COUNT(*) AS rides
+FROM `case-study-cyclistic-470310.cyclistic_dataset.trips_clean`
+GROUP BY month, member_casual
+ORDER BY month, member_casual;
+
+
+SELECT 
+  member_casual,
+  rideable_type,
+  COUNT(*) AS rides
+FROM `case-study-cyclistic-470310.cyclistic_dataset.trips_clean`
+GROUP BY member_casual, rideable_type
+ORDER BY member_casual, rideable_type;
+
+
+
